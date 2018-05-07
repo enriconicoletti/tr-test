@@ -59,9 +59,9 @@ The goal for the first step is to have a running apache serving an helloworld PH
 
 - Created the docker compose folder structure; a `web` subfolder with the first `Dockerfile`; and an example `index.php` just echoing an Hello world string. I set the port mapping to access the webserver from port 8080 of the host. The content of the apache `www` folder is copied in the containter at build time.
 
-- Added a simple round-robin load balancer using the dockercloud `HAProxy` image. I linked the load balancer to the webserver container and moved the _80:8080_ port mapping to the load balancer, as the host don't need anymore to connect to the webserver directly. Now is possible to specify the `--scale web=2`  command line parameter to spawn multiple webservers instances behind the loadbalancer.
+- Added a simple round-robin load balancer using the dockercloud `HAProxy` image. I linked the load balancer to the webserver container and moved the _80:8080_ port mapping to the load balancer, as the host doesn't need anymore to connect to the webserver directly. Now is possible to specify the `--scale web=2`  command line parameter to spawn multiple webservers instances behind the loadbalancer.
 
-- Adjusted the PHP file to output the IP, the timestamp and a visits counter (not yet shared). The content-type is changed to interpret the output as json. Loading the PHP page the visit counter is incremented every two refresh, as expected. 
+- Adjusted the PHP file to output the IP, the timestamp and a visits counter (not yet shared). The content-type is changed to interpret the output as json.
 
 ### Test if working
 Start the cluster as mentioned before and point the browser to http://localhost:8080. You should see a json with a visits counter that is incremented every second page refresh, indicating that we are hitting different webservers behind the load balancer.
@@ -83,7 +83,7 @@ ProxyPassMatch ^/(.*\.php(/.*)?)$ fcgi://fastcgi:9000/var/www/html/$1
 
 - Installed and enabled the `proxy_fcgi` apache module to use the _ProxyPassMatch_ directive. Additionally I Installed the `php-redis` extension (using pecl) to enable PHP to use Redis as session storage system.
 
-- Configured PHP to use Redis: changed this values in `php.ini` file and configured the Dockerfile to copy php.ini at containter build time
+- Configured PHP to use Redis: changed this values in `php.ini` file and configured the Dockerfile to copy `php.ini` at containter build time
 ```
 session.save_handler = redis
 session.save_path = "tcp://redis:6379"
@@ -99,9 +99,9 @@ Go to http://localhost:8080. You should get a JSON. Refresh the page multiple ti
 To check the value stored in Redis open http://localhost:5001 and use `redis` as hostname. Click on the _Keys_ menu, and check the value stored in the `PHPREDIS_SESSION` key. It should be something like `count|i:12;`
 
 To check if the PHP interpretation is working correctly go to http://localhost:8080/debug.php.
-There is a list of headers used to infer the IP address. In the _phpinfo()_ part check if `Server API` is `FPM/FastCGI`. Also note that the `System` value now remains the same also after refreshing the page, giving somehow an additional proof that the PHP_FPM container is interpreting the PHP script.
+There is a list of headers used to infer the IP address. In the _phpinfo()_ part check if `Server API` is `FPM/FastCGI`. Also note that the `System` value now remains the same after refreshing the page, giving somehow an additional proof that the PHP_FPM container is interpreting the PHP script.
 
-We want to delegate only the PHP files, the static resources should still be managed by Apache for performanace reasons. To prrove that is working go to http://localhost:8080/devops.jpg; this is a static resource served by Apache. Now kill the fastcgi container (eg: ```docker kill tr-test_fastcgi_1```), the `debug.php` and `index.php` pages should not be reachable anymore, while should still be possible to see the image at http://localhost:8080/devops.jpg
+We want to delegate only the PHP files, the static resources should still be managed by Apache for performanace reasons. To prove that go to http://localhost:8080/devops.jpg; this is a static resource served by Apache. Now kill the fastcgi container (eg: ```docker kill tr-test_fastcgi_1```), the `debug.php` and `index.php` pages should not be reachable anymore, while should still be possible to see the image at http://localhost:8080/devops.jpg
 
 ## Step 3: Decentralized logging
 
@@ -138,7 +138,7 @@ output:
     timeout: 15
 ```
 
-- Found a fast to setup distribution of the elk stack here https://elk-docker.readthedocs.io/. At the beginning I had some issues with the log forwarding, the issue was the certificate configuration on the logstash side. I Disabled the logstash SSL configuration part to set it up faster (not ok for production). A self signed certificate is provided with the image, but for production use would be better to have a proper certificate, so for this demo I skipped the SSL part entirely. In the documentation linked above there are hints on how to improve the security for production usage.
+- Found a fast to setup distribution of the elk stack here https://elk-docker.readthedocs.io/. At the beginning I had some issues with the log forwarding, the issue was the certificate configuration on the logstash side. I disabled the logstash SSL configuration part to set it up faster (not ok for production). A self signed certificate is provided with the image, but for production use would be better to have a proper certificate, so for this demo I skipped the SSL part entirely. In the documentation linked above there are hints on how to improve the security for production usage.
 
 ```
 input {
@@ -150,7 +150,7 @@ input {
   }
 }
 ```
-In order to debug this issue and to see if the problem is in the communication _web->elk_ or in the elk container itself, you can create a fake log entry like this: 
+In order to debug this issue and to see if the problem is in the communication _web->elk_ or in the elk container itself, you can create a fake log entry this way: 
 ```
 # Connect to elk container and run
 /opt/logstash/bin/logstash --path.data /tmp/logstash/data \
@@ -164,17 +164,17 @@ Go to http://localhost:5601 to access the Kibana UI. Click _"Management"_ and _"
 
 Refresh multiple times the page at http://localhost:8080 in order to generate some apache access.log event. 
 
-In Kibana UI click on _"Discover"_ menu and then set automatic refresh of the UI 5 seconds for convenience. You should be able to see a chart with the count of access+error events coming from the web container
+In Kibana UI click on _"Discover"_ menu and then set automatic refresh of the UI 5 seconds for convenience. You should be able to see a chart with the count of access+error events coming from the web container.
 
 
 ## Step 4: Elastic indexes cleanup
  
-To cleanup old indexes I use a Jenkins job that starts around midnight and makes CURL call to elastic search API to delete the old indexes. Setting up the image is straightforward
+To cleanup old indexes I use a Jenkins job that starts around midnight and makes CURL call to elastic search API to delete the old indexes. Setting up the image is straightforward.
 
-- I used `jenkins/jenkins:latest` image as base to create a custom Dockerfile. The issue here is that jenkins starts with no user and with a setup wizard. Our goal is to have an preconfigured instance with some plugins and a job.
-At first I planned to run jenkins, set it up manually from the UI and the copy the /var/jenkins_home folder which contains all configuration. This would have worked but the folder was quite big (~100MB) also for a basic installation with few plugins, so I decided to go for a cleaner alternative.
+- At first I used the `jenkins/jenkins:latest` image. The issue here is that jenkins starts with no user and with a setup wizard. Our goal instead is to have an preconfigured instance with some plugins and a job.
+At first I planned to run jenkins, set it up manually from the UI and then copy the /var/jenkins_home folder which contains all configuration (and plugins). This would have worked, but the folder was quite big (~100MB) also for a basic installation with few plugins, so I decided to go for a cleaner alternative.
 
-- I found an different image that I used as a base to develop my own Dockerfile (https://github.com/foxylion/docker-jenkins). This provided useful hints on how to set a default user and how to configure jenkins to skip the setup wizard. I copy pasted pieces of it to create my docker image based on the `jenkins/jenkins` one. 
+- I found a different image that I used as a base to develop my own Dockerfile (https://github.com/foxylion/docker-jenkins). This provided useful hints on how to set a default user and how to configure jenkins to skip the setup wizard. I copy pasted pieces of it to create my docker image based on the `jenkins/jenkins` one. 
 
 - After starting the container I configured (through the Jenkins UI) a new job that runs at "@midnight" and runs some shell commands, reported here:
 
@@ -221,9 +221,9 @@ INDEXES TO BE DELETED
 Deleting filebeat-2018.05.06 ...  {"acknowledged":true}Finished: SUCCESS
 ```
 
-This script was created using some suggestions found online (https://stackoverflow.com/questions/33430055/removing-old-indices-in-elasticsearch). Using Curator (https://github.com/elastic/curator) would probably be a better option for production environment as this script is not optimized. For example is not checking if the index is deleted nor is returning appropriate exit statuses.
+This script was created using some suggestions found online (https://stackoverflow.com/questions/33430055/removing-old-indices-in-elasticsearch). Using Curator (https://github.com/elastic/curator) would probably be a better option for production environment as this script is not optimized. For example is not checking if the index is deleted nor has proper error management.
 
-- After I manually configured and tested the job I copied the "jobs" folder form the running container (```docker cp <container>:<sourcefile><dest>```) and changed the Dockerfile to copy this folder at container build time. Note that the jobs folder should be copied from Docker file specifying "jenkins" user as owner:group, otherwise jenkins will not load properly because it cannot write in it (will be owned by root if not differently specified).
+- After I manually configured and tested the job, I then copied the "jobs" folder form the running container (```docker cp <container>:<sourcefile><dest>```) and changed the Dockerfile to copy this folder at container build time. Note that the jobs folder should be copied from Docker file specifying "jenkins" as owner:group, otherwise jenkins will not load properly because it cannot write in it (will be owned by root if not differently specified).
 
 ### Test if working
 Go to http://localhost:9090, access with username `admin` and password `admin` and run the `elastic-index-cleanup` job. Check if the console output is similar to the one reported above. Out of the box it deletes only indexes older than 30 days. If you want to delete the index that was just created at cluster startup, change to '-1' the value of 
