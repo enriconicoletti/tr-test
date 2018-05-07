@@ -1,0 +1,10 @@
+Started by user [8mha:////4N0TtrrZqxq4OegvUncRnSY0sIQofGUM2byvsg3r9ygfAAAAlx+LCAAAAAAAAP9b85aBtbiIQTGjNKU4P08vOT+vOD8nVc83PyU1x6OyILUoJzMv2y+/JJUBAhiZGBgqihhk0NSjKDWzXb3RdlLBUSYGJk8GtpzUvPSSDB8G5tKinBIGIZ+sxLJE/ZzEvHT94JKizLx0a6BxUmjGOUNodHsLgAzWEgZu/dLi1CL9xJTczDwAj6GcLcAAAAA=[0madmin
+Building in workspace /var/jenkins_home/workspace/elastic-index-cleanup
+[elastic-index-cleanup] $ /bin/bash /tmp/jenkins7876791339423039047.sh
+Searching and delete indexes created before date (yyyymmdd): 20180507
+
+ALL AVAILABLE INDEXES
+yellow open   filebeat-2018.05.06 ECw7sR7ZRF22GRzeHQeCaQ   5   1          8            0     62.3kb         62.3kb
+
+DELETE OLD INDEXES
+Deleting filebeat-2018.05.06 ...  {"acknowledged":true}Finished: SUCCESS

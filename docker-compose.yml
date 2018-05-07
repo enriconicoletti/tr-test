@@ -1,0 +1,53 @@
+version: '3'
+services:
+  fastcgi:
+    build: ./fastcgi
+    volumes:
+      - ./web/www:/var/www/html
+    depends_on:
+      - redis # To store session data
+  web:
+    build: ./web
+    volumes:
+      - ./web/www:/var/www/html
+    depends_on:
+      - fastcgi # To interpret PHP
+      - elk     # To send logs events to logstash
+  lb:
+    image: dockercloud/haproxy
+    # A link is required in order to ensure that dockercloud/haproxy is aware of which 
+    # service it needs to balance, although links are not needed for service discovery 
+    # since docker 1.10. Linked aliases are not required.
+    links:
+     - web # To do the loadbalancing ('links' implies a 'depends_on')
+    ports:
+     - '8080:80' # Allow the users to point the browser on http://localhost:8080
+    # The container needs access to the docker socket, you must mount the correct files 
+    # and set the related environment to make it work.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock #IMPORTANT! see docs https://github.com/docker/dockercloud-haproxy/tree/master
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
+  redis-browser:
+    image: marian/rebrow
+    depends_on:
+      - redis # To have the storage initialized
+    ports:
+      - 5001:5001
+  elk:
+    build: ./elk
+    environment: 
+      - discovery.type=single-node
+    ports:
+      - "5601:5601"
+      - "9200:9200"
+      - "5044:5044"
+  jenkins:
+    build: ./jenkins
+    ports:
+     - '9090:8080' # Allow the users to point the browser on http://localhost:9090
+     - '5000:5000'
+
+

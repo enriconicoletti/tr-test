@@ -1,0 +1,49 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <hudson.triggers.TimerTrigger>
+      <spec>@midnight</spec>
+    </hudson.triggers.TimerTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+
+OLDERTHAN=30 # Delete indexes older than N days
+
+# Zero padded days using %d instead of %e
+DAYSAGO=`date --date=&quot;$OLDERTHAN days ago&quot; +%Y%m%d`
+
+echo &quot;Search and delete indexes created before date (yyyymmdd): $DAYSAGO&quot;
+ALLLINES=`/usr/bin/curl --silent --show-error -XGET http://elk:9200/_cat/indices?v | egrep filebeat`
+echo
+echo &quot;ALL AVAILABLE INDEXES&quot;
+echo &quot;$ALLLINES&quot;
+echo
+echo &quot;INDEXES TO BE DELETED&quot;
+echo &quot;$ALLLINES&quot; | while read LINE
+do
+  FORMATEDLINE=`echo $LINE | awk &apos;{ print $3 }&apos; | awk -F&apos;-&apos; &apos;{ print $2 }&apos; | sed &apos;s/\.//g&apos; `
+  if [ &quot;$FORMATEDLINE&quot; -lt &quot;$DAYSAGO&quot; ]
+  then
+    TODELETE=`echo $LINE | awk &apos;{ print $3 }&apos;`
+    printf &quot;Deleting $TODELETE ...  &quot;
+    /usr/bin/curl --silent --show-error -XDELETE http://elk:9200/$TODELETE
+    sleep 1
+    fi
+done
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>
